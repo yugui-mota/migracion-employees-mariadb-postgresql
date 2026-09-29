@@ -1716,12 +1716,71 @@ verificados. Esta prueba no incluye una repetición de los checksums en la
 base restaurada; los checksums del apartado 3.2 comparan MariaDB con la base
 migrada original, no con `pdb_employees_prueba`.
 
+## Conclusiones
+
+La migración de las seis tablas de MariaDB a PostgreSQL mediante pgloader
+se completó sin errores reportados. Los conteos coincidieron en ambos
+gestores, con un total de 3919015 registros. También se verificó la
+conservación del tipo enumerado `employees_gender` y sus valores `M` y `F`.
+
+Las vistas `dept_emp_latest_date` y `current_dept_emp` se adaptaron mediante
+SQL, conservando la lógica de las definiciones originales. Ambas devolvieron
+300024 filas en cada gestor y coincidieron en las muestras ordenadas de diez
+filas. Estas pruebas respaldan su funcionamiento, aunque no constituyen una
+comparación exhaustiva de todos los valores devueltos por las vistas.
+
+Las verificaciones de contenido cubrieron todas las filas y columnas de las
+seis tablas mediante checksums comparables, sin detectar diferencias. Además,
+las seis consultas de integridad referencial devolvieron cero registros
+huérfanos tanto en MariaDB como en PostgreSQL. La coincidencia de hashes se
+interpreta como evidencia de consistencia, no como garantía matemática de
+identidad absoluta.
+
+Durante la verificación de `salaries` se identificó un truncamiento del texto
+concatenado en MariaDB. El problema correspondía al cálculo del checksum y
+no demostraba pérdida de datos en la migración. Se resolvió comparando 29
+bloques de hasta 100000 filas; todos coincidieron y sus longitudes completas
+se comprobaron sin advertencias. Esto evidenció la importancia de revisar
+los límites del gestor antes de interpretar diferencias en los resultados.
+
+Finalmente, el respaldo en formato `.dump` se generó y restauró con código
+de salida cero en una base independiente. Los conteos de las seis tablas y
+las dos vistas restauradas coincidieron con los anteriores al respaldo,
+demostrando que el archivo pudo recuperarse en el entorno utilizado. No se
+repitieron los checksums sobre la base de prueba, por lo que esta validación
+posterior a la restauración se limita a su ejecución correcta y a los conteos.
+
+En conjunto, las evidencias obtenidas respaldan la migración y la recuperación
+de la base de datos dentro del alcance de las pruebas realizadas, y permiten
+documentar un procedimiento reproducible de transferencia y verificación.
+
 ## 5. Entrega en GitHub
 
 Repositorio público de la entrega:
 
 [yugui-mota/migracion-employees-mariadb-postgresql](https://github.com/yugui-mota/migracion-employees-mariadb-postgresql)
 
+### 5.1 Publicación del respaldo
+
+El respaldo se incorporó en la carpeta `backup/` mediante el commit
+`0cc002c`, con el mensaje `Agregar backup PostgreSQL verificado`.
+Se publicó desde la terminal con:
+
+```bash
+git push origin main
+```
+
+Extracto de la salida registrada:
+
+```text
+Escribiendo objetos: 100% (4/4), 34.74 MiB | 607.00 KiB/s, listo.
+To https://github.com/yugui-mota/migracion-employees-mariadb-postgresql.git
+   039f3f4..0cc002c  main -> main
+```
+
+La actualización de la rama remota confirma la publicación del commit que
+contiene el respaldo. El archivo está en
+`backup/backup_pdb_employees_2026-09-28_23-47.dump`.
 
 
 
